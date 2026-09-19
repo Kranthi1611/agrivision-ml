@@ -1,0 +1,11 @@
+fastapi
+uvicorn[standard]
+python-multipart
+pydantic
+numpy
+pandas
+Pillow
+opencv-python-headless
+matplotlib
+requests
+tensorflow==2.20.0
