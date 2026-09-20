@@ -9,3 +9,4 @@ opencv-python-headless
 matplotlib
 requests
 tensorflow==2.20.0
+openpyxl
