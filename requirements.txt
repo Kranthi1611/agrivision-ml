@@ -10,3 +10,4 @@ matplotlib
 requests
 tensorflow==2.20.0
 openpyxl
+easyocr
