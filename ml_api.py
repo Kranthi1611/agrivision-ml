@@ -7,7 +7,25 @@ from pathlib import Path
 import shutil
 import json
 import uuid
-import gc
+import pandas as pd
+
+from disease_detection import predict_disease
+
+from optimized_drone_path import (
+    main,
+    OUTPUT_IMAGE,
+    OUTPUT_CSV,
+    OUTPUT_STATS,
+    INPUT_IMAGE
+)
+
+from field_mapping import run_mapping
+from resource_estimation import run_estimation
+from farmer_notifications import (
+    build_farmer_message,
+    normalize_mobile,
+    send_sms,
+)
 
 
 # ============================================================
@@ -115,19 +133,10 @@ async def disease_detection(
             }
 
         # ----------------------------------------------------
-        # Lazy-load Disease Detection
-        #
-        # TensorFlow + the Keras model are imported only when
-        # this endpoint is called. This keeps Field Mapping
-        # from paying the TensorFlow/model memory cost.
+        # Run Disease Detection
         # ----------------------------------------------------
 
-        from disease_detection import predict_disease
-
         result = predict_disease(image_bytes)
-
-        del image_bytes
-        gc.collect()
 
         # ----------------------------------------------------
         # Return Result
@@ -230,21 +239,16 @@ async def field_mapping(
         )
 
     # --------------------------------------------------------
-    # Run Field Mapping
+    # Run ML
     # --------------------------------------------------------
 
     try:
-
-        # Lazy import: keep API startup and unrelated endpoints light.
-        from field_mapping import run_mapping
 
         result = run_mapping(
             str(image_path),
             str(farmer_path),
             str(output_dir)
         )
-
-        gc.collect()
 
         # ----------------------------------------------------
         # Output files
@@ -605,8 +609,6 @@ async def resource_estimation(
         # Run Resource Estimation
         # ----------------------------------------------------
 
-        from resource_estimation import run_estimation
-
         result = run_estimation(
             str(farmer_path),
             str(output_dir)
@@ -789,17 +791,6 @@ async def optimized_drone_path(
             "message":
                 "No field image received."
         }
-
-    # --------------------------------------------------------
-    # Lazy-load the drone route module.
-    # --------------------------------------------------------
-    from optimized_drone_path import (
-        main,
-        OUTPUT_IMAGE,
-        OUTPUT_CSV,
-        OUTPUT_STATS,
-        INPUT_IMAGE,
-    )
 
     INPUT_IMAGE.parent.mkdir(
         parents=True,
@@ -1015,15 +1006,6 @@ async def farmer_notifications(
     try:
 
         # ----------------------------------------------------
-        # Lazy-load notification helpers.
-        # ----------------------------------------------------
-        from farmer_notifications import (
-            build_farmer_message,
-            normalize_mobile,
-            send_sms,
-        )
-
-        # ----------------------------------------------------
         # Use the Resource Estimation result already generated
         # on the Resource Estimation page.
         #
@@ -1064,8 +1046,6 @@ async def farmer_notifications(
         # Read original farmer data
         # This preserves Mobile Number
         # ----------------------------------------------------
-
-        import pandas as pd
 
         suffix = farmer_path.suffix.lower()
 
@@ -1275,7 +1255,6 @@ async def farmer_notifications(
                 ensure_ascii=False
             )
 
-        gc.collect()
         return result
 
     except Exception as e:
@@ -1305,11 +1284,6 @@ def send_farmer_sms(
 ):
 
     try:
-
-        from farmer_notifications import (
-            normalize_mobile,
-            send_sms,
-        )
 
         mobile = normalize_mobile(
             request.mobile_number
